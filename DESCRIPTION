@@ -1,0 +1,26 @@
+Package: Pomona
+Title: Identification of relevant variables in omics data sets using Random
+    Forests
+Version: 1.0.2
+Authors@R: 
+    person("Silke", "Szymczak", email = "silke.szymczak@uni-luebeck.de",
+  role = c("aut", "cre"))
+  person("Cesaire", "Fouodo", email = "cesaire.kuetefouodo@uni-luebeck.de",
+  role = c("cre"))
+Description: This package provides different methods for identifying relevant
+    variables in omics data sets using Random Forests. It implements the following
+    approaches: empirical and parametric permutation (Altmann), Boruta, Vita,
+    r2VIM (recurrent relative veriable importance), RFE (recursive feature
+    elimination) and Hybrid, combining Vita and Boruta. All approaches use unscaled permutation variable importance and
+    the R package ranger to generate the forests. The
+    package also includes a function to simulate correlated gene expression data.
+Depends:
+    R (>= 3.3.1)
+Imports:
+    ranger (>= 0.5.0),
+    Boruta (>= 5.1.0),
+    methods
+License: GPL-3
+LazyData: true
+RoxygenNote: 7.1.1
+Encoding: UTF-8
