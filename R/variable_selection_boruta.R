@@ -11,6 +11,7 @@
 #' @inheritParams wrapper.rf
 #' @param pValue confidence level (default: 0.01 based on Boruta package)
 #' @param maxRuns maximal number of importance source runs (default: 100 based on Boruta package)
+#' @param holdout If TRUE, the holdout variable importance is calculated.
 #'
 #' @return List with the following components:
 #'   \itemize{
@@ -48,23 +49,73 @@ var.sel.boruta <- function(x, y,
                            method = "ranger",
                            type = "regression",
                            importance = "impurity_corrected",
+                           replace = TRUE,
+                           sample.fraction = ifelse(replace, 1, 0.632),
+                           holdout = TRUE,
                            case.weights = NULL) {
 
   ## variable selection using Boruta function
   ## ----------------------------------------
   # modified version of getImpRfRaw function to enable user defined mtry
   # values
-  get.imp.r.f.raw.mtry <- function(x, y, ...) {
-    rf <- wrapper.rf(x = x, y = y, ...)
-    return(rf$variable.importance)
+  get.imp.r.f.raw.mtry <- function(x, y, ...){
+    x <- data.frame(x)
+    imp <- wrapper.rf(x = x,
+                      y = y,
+                      ...)$variable.importance
+    return(imp)
   }
+  if(!(is.logical(holdout))){
+    stop("Logical value required for 'holdout'.")
+  }
+  unbiased_imp_method <- if(holdout){
+    if(importance != "permutation"){
+      stop("Set importance to 'permutation' for holdout.")
+    }
+    ## train holdout RFs
+    my_holdout.rf <- function(x = x, y = y,
+                              ntree = ntree,
+                              mtry.prop = mtry.prop,
+                              nodesize.prop = nodesize.prop,
+                              no.threads = no.threads,
+                              type = type,
+                              importance = importance,
+                              replace = replace,
+                              sample.fraction = sample.fraction,
+                              case.weights = case.weights,
+                              ...){
+      holdout.rf(x = x, y = y,
+                 ntree = ntree,
+                 mtry.prop = mtry.prop,
+                 nodesize.prop = nodesize.prop,
+                 no.threads = no.threads,
+                 type = type,
+                 importance = importance,
+                 replace = replace,
+                 sample.fraction = sample.fraction,
+                 ...)$variable.importance
+      }
+  } else {
+    get.imp.r.f.raw.mtry
+  }
+
+  ## variable selection using Boruta function
+  ## ----------------------------------------
+  # modified version of getImpRfRaw function to enable user defined mtry
+  # values
+  # get.imp.r.f.raw.mtry <- function(x, y, ...) {
+  #   rf <- wrapper.rf(x = x, y = y, ...)
+  #   return(rf$variable.importance)
+  # }
 
   res.boruta = Boruta::Boruta(x = x, y = y,
                               pValue = pValue, maxRuns = maxRuns,
                               ntree = ntree, nodesize.prop = nodesize.prop,
                               no.threads = no.threads,mtry.prop = mtry.prop,
-                              getImp = get.imp.r.f.raw.mtry,
+                              getImp = unbiased_imp_method,
                               importance = importance,
+                              replace = replace,
+                              sample.fraction = sample.fraction,
                               type = type,
                               case.weights = case.weights)
 

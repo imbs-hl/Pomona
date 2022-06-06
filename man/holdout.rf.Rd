@@ -12,7 +12,11 @@ holdout.rf(
   nodesize.prop = 0.1,
   no.threads = 1,
   type = "regression",
-  importance = importance
+  importance = importance,
+  replace = TRUE,
+  sample.fraction = ifelse(replace, 1, 0.632),
+  case.weights = NULL,
+  ...
 )
 }
 \arguments{
@@ -34,6 +38,14 @@ nodes.}
 \item{type}{mode of prediction ("regression", "classification" or "probability").}
 
 \item{importance}{See \code{\link[ranger]{ranger}} for details.}
+
+\item{replace}{See \code{\link[ranger]{ranger}} for details.}
+
+\item{sample.fraction}{See \code{\link[ranger]{ranger}} for details.}
+
+\item{case.weights}{See \code{\link[ranger]{ranger}} for details.}
+
+\item{...}{additional parameters passed to \code{ranger}.}
 }
 \value{
 Hold-out random forests with variable importance

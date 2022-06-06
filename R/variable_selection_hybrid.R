@@ -11,6 +11,7 @@
 #' @param pValue confidence level (default: 0.01 based on \code{\link[Boruta]{Boruta}} package)
 #' @param maxRuns maximal number of importance source runs (default: 100 based on \code{\link[Boruta]{Boruta}} package)
 #' @param alpha significance threshold used by Vita
+#' @param holdout If TRUE, the holdout variable importance is calculated.
 #' @param seed Seed
 #'
 #' @return List with the following components:
@@ -50,6 +51,9 @@ var.sel.hybrid <- function(x, y,
                            method = "ranger",
                            type = "regression",
                            importance = "impurity_corrected",
+                           replace = TRUE,
+                           sample.fraction = ifelse(replace, 1, 0.632),
+                           holdout = TRUE,
                            seed = 123,
                            case.weights = NULL) {
 
@@ -64,6 +68,41 @@ var.sel.hybrid <- function(x, y,
                       ...)$variable.importance
     return(imp)
   }
+  if(!(is.logical(holdout))){
+    stop("Logical value required for 'holdout'.")
+  }
+  unbiased_imp_method <- if(holdout){
+    if(importance != "permutation"){
+      stop("Set importance to 'permutation' for holdout.")
+    }
+    ## train holdout RFs
+    my_holdout.rf <- function(x = x, y = y,
+                              ntree = ntree,
+                              mtry.prop = mtry.prop,
+                              nodesize.prop = nodesize.prop,
+                              no.threads = no.threads,
+                              type = type,
+                              importance = importance,
+                              replace = replace,
+                              sample.fraction = sample.fraction,
+                              ...){
+      holdout.rf(x = x, y = y,
+                 ntree = ntree,
+                 mtry.prop = mtry.prop,
+                 nodesize.prop = nodesize.prop,
+                 no.threads = no.threads,
+                 type = type,
+                 importance = importance,
+                 replace = replace,
+                 sample.fraction = sample.fraction,
+                 ...)$variable.importance
+    }
+  } else {
+    if(importance != "impurity_corrected"){
+      stop("Set importance to 'impurity_corrected' for corrected impurity.")
+    }
+    get_imp_ranger
+  }
   res.boruta = hybrid(x = x, y = y,
                       pValue = pValue,
                       maxRuns = maxRuns,
@@ -72,10 +111,12 @@ var.sel.hybrid <- function(x, y,
                       nodesize.prop = nodesize.prop,
                       no.threads = no.threads,
                       mtry.prop = mtry.prop,
-                      getImp = get_imp_ranger,
+                      getImp = unbiased_imp_method,
                       importance = importance,
                       seed = seed,
                       type = type,
+                      replace = replace,
+                      sample.fraction = sample.fraction,
                       case.weights = case.weights)
 
   ## select variables

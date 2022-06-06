@@ -17,6 +17,9 @@ var.sel.hybrid(
   method = "ranger",
   type = "regression",
   importance = "impurity_corrected",
+  replace = TRUE,
+  sample.fraction = ifelse(replace, 1, 0.632),
+  holdout = TRUE,
   seed = 123,
   case.weights = NULL
 )
@@ -49,6 +52,12 @@ nodes.}
 
 \item{importance}{Variable importance mode ('none', 'impurity',
 'impurity_corrected' or 'permutation'). Default is 'impurity_corrected'.}
+
+\item{replace}{Sample with replacement.}
+
+\item{sample.fraction}{Fraction of observations to sample. Default is 1 for sampling with replacement and 0.632 for sampling without replacement. For classification, this can be a vector of class-specific values.}
+
+\item{holdout}{If TRUE, the holdout variable importance is calculated.}
 
 \item{seed}{Seed}
 

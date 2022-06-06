@@ -7,6 +7,8 @@
 #'
 #' @inheritParams wrapper.rf
 #' @param p.t threshold for p-values (all variables with a p-value = 0  or < p.t will be selected)
+#' @param holdout If TRUE, the holdout variable importance is calculated.
+#' @param ... additional parameters passed to \code{getImp}
 #'
 #' @return List with the following components:
 #'   \itemize{
@@ -35,16 +37,72 @@
 #' @export
 
 var.sel.vita <- function(x, y, p.t = 0.05,
-                            ntree = 500, mtry.prop = 0.2, nodesize.prop = 0.1,
-                            no.threads = 1, method = "ranger", type = "regression", importance = "impurity_corrected") {
+                         ntree = 500,
+                         mtry.prop = 0.2,
+                         nodesize.prop = 0.1,
+                         no.threads = 1,
+                         method = "ranger",
+                         type = "regression",
+                         importance = "impurity_corrected",
+                         replace = TRUE,
+                         sample.fraction = ifelse(replace, 1, 0.632),
+                         holdout = TRUE,
+                         ...) {
 
-  ## train holdout RFs
-  res.holdout = holdout.rf(x = x, y = y,
-                           ntree = ntree, mtry.prop = mtry.prop, nodesize.prop = nodesize.prop,
-                           no.threads = no.threads, type = type,  importance = importance)
+  # ## train holdout RFs
+  # res.holdout = holdout.rf(x = x, y = y,
+  #                          ntree = ntree,
+  #                          mtry.prop = mtry.prop,
+  #                          nodesize.prop = nodesize.prop,
+  #                          no.threads = no.threads,
+  #                          type = type,
+  #                          importance = importance)
 
+  ## Train impurity corrected RFs
+  # modified version of getImpRfRaw function to enable user defined mtry
+  # values
+  get_imp_ranger <- function(x, y, ...){
+    x <- data.frame(x)
+    imp.rf <- wrapper.rf(x = x,
+                      y = y,
+                      ...)
+    return(imp.rf)
+  }
+  if(!(is.logical(holdout))){
+    stop("Logical value required for 'holdout'.")
+  }
+  unbiased_importance <- if(holdout){
+    if(importance != "permutation"){
+      stop("Set importance to 'permutation' for holdout.")
+    }
+    ## train holdout RFs
+    holdout.rf(x = x, y = y,
+               ntree = ntree,
+               mtry.prop = mtry.prop,
+               nodesize.prop = nodesize.prop,
+               no.threads = no.threads,
+               type = type,
+               importance = importance,
+               replace = replace,
+               sample.fraction = sample.fraction,
+               ...)
+  } else {
+    if(importance != "impurity_corrected"){
+      stop("Set importance to 'impurity_corrected' for corrected impurity.")
+    }
+    get_imp_ranger(x = x, y = y,
+                   ntree = ntree,
+                   mtry.prop = mtry.prop,
+                   nodesize.prop = nodesize.prop,
+                   no.threads = no.threads,
+                   type = type,
+                   importance = importance,
+                   replace = replace,
+                   sample.fraction = sample.fraction,
+                   ...)
+  }
   ## variable selection using importance_pvalues function
-  res.janitza = ranger::importance_pvalues(x = res.holdout,
+  res.janitza = ranger::importance_pvalues(x = unbiased_importance,
                                            method = "janitza",
                                            conf.level = 0.95)
   res.janitza = as.data.frame(res.janitza)
@@ -75,14 +133,26 @@ var.sel.vita <- function(x, y, p.t = 0.05,
 #' @param no.threads number of threads used for parallel execution.
 #' @param type mode of prediction ("regression", "classification" or "probability").
 #' @param importance See \code{\link[ranger]{ranger}} for details.
+#' @param replace See \code{\link[ranger]{ranger}} for details.
+#' @param sample.fraction See \code{\link[ranger]{ranger}} for details.
+#' @param case.weights See \code{\link[ranger]{ranger}} for details.
+#' @param ... additional parameters passed to \code{ranger}.
 #'
 #' @return Hold-out random forests with variable importance
 #'
 #' @references
 #' Janitza, S., Celik, E. & Boulesteix, A.-L., (2015). A computationally fast variable importance test for random forest for high dimensional data, Technical Report 185, University of Munich, https://epub.ub.uni-muenchen.de/25587.
 
-holdout.rf <- function(x, y, ntree = 500, mtry.prop = 0.2, nodesize.prop = 0.1, no.threads = 1,
-                       type = "regression", importance = importance) {
+holdout.rf <- function(x, y, ntree = 500,
+                       mtry.prop = 0.2,
+                       nodesize.prop = 0.1,
+                       no.threads = 1,
+                       type = "regression",
+                       importance = importance,
+                       replace = TRUE,
+                       sample.fraction = ifelse(replace, 1, 0.632),
+                       case.weights = NULL,
+                       ...) {
 
   ## define two cross-validation folds
   n = nrow(x)
@@ -93,14 +163,18 @@ holdout.rf <- function(x, y, ntree = 500, mtry.prop = 0.2, nodesize.prop = 0.1, 
                               ntree = ntree, mtry.prop = mtry.prop,
                               nodesize.prop = nodesize.prop, no.threads = no.threads,
                               method = "ranger", type = type,
-                              case.weights = weights, replace = FALSE,
-                              holdout = TRUE, importance = importance),
+                              case.weights = weights, replace = replace,
+                              sample.fraction = sample.fraction,
+                              holdout = TRUE, importance = importance,
+                              ...),
              rf2 = wrapper.rf(x = x, y = y,
                               ntree = ntree, mtry.prop = mtry.prop,
                               nodesize.prop = nodesize.prop, no.threads = no.threads,
                               method = "ranger", type = type,
-                              case.weights = 1 - weights, replace = FALSE,
-                              holdout = TRUE,  importance = importance))
+                              case.weights = 1 - weights, replace = replace,
+                              sample.fraction = sample.fraction,
+                              holdout = TRUE,  importance = importance,
+                              ...))
 
   ## calculate mean VIM
   res$variable.importance = (res$rf1$variable.importance +
