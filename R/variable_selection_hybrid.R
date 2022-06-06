@@ -53,7 +53,7 @@ var.sel.hybrid <- function(x, y,
                            importance = "impurity_corrected",
                            replace = TRUE,
                            sample.fraction = ifelse(replace, 1, 0.632),
-                           holdout = TRUE,
+                           holdout = FALSE,
                            seed = 123,
                            case.weights = NULL) {
 

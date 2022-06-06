@@ -46,7 +46,7 @@ var.sel.vita <- function(x, y, p.t = 0.05,
                          importance = "impurity_corrected",
                          replace = TRUE,
                          sample.fraction = ifelse(replace, 1, 0.632),
-                         holdout = TRUE,
+                         holdout = FALSE,
                          ...) {
 
   # ## train holdout RFs
