@@ -8,6 +8,7 @@ var.sel.vita(
   x,
   y,
   p.t = 0.05,
+  fdr.adj = TRUE,
   ntree = 500,
   mtry.prop = 0.2,
   nodesize.prop = 0.1,
@@ -29,6 +30,8 @@ columns and samples in rows (Note: missing values are not allowed).}
 classification mode is used).}
 
 \item{p.t}{threshold for p-values (all variables with a p-value = 0  or < p.t will be selected)}
+
+\item{fdr.adj}{If TRUE, methods of Benjamini, Hochberg, and Yekutieli is applied to control the false discovery rate.}
 
 \item{ntree}{number of trees.}
 
@@ -70,7 +73,7 @@ List with the following components:
   }
  @references
  Janitza, S., Celik, E. & Boulesteix, A.-L., (2015). A computationally fast variable importance test for random forest for high dimensional data, Technical Report 185, University of Munich, https://epub.ub.uni-muenchen.de/25587.
-
+ Benjamini, Y., and Yekutieli, D. (2001). The control of the false discovery rate in multiple testing under dependency. Annals of Statistics, 29, 1165–1188. doi: 10.1214/aos/1013699998.
  @examples
 # simulate toy data set
 data = simulation.data.cor(no.samples = 100, group.size = rep(10, 6), no.var.total = 500)
