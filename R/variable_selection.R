@@ -47,7 +47,6 @@ wrapper.rf <- function(x, y, ntree = 500,
                        replace = TRUE,
                        sample.fraction = ifelse(replace, 1, 0.632),
                        case.weights = NULL, ...) {
-
   ## check data
   if (length(y) != nrow(x)) {
     stop("length of y and number of rows in x are different")
@@ -90,6 +89,7 @@ wrapper.rf <- function(x, y, ntree = 500,
                         case.weights = case.weights,
                         min.node.size = nodesize,
                         num.threads = no.threads,
+                        sample.fraction = sample.fraction,
                         write.forest = TRUE,
                         ...)
   } else {
